@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+    nginx:
+        build:
+            context: ./requirements/nginx
+            args:
+                - DOMAIN_NAME=${DOMAIN_NAME}
+        container_name: nginx
+        ports:
+            - "443:443"
+        volumes:
+            - wp_files:/var/www/html
+        depends_on:
+            - wordpress
+        networks:
+            - inception
+        restart: always
+
+    wordpress:
+        build:
+            context: ./requirements/wordpress
+        container_name: wordpress
+        env_file: .env
+        secrets:
+            - db_user_s
+            - db_pass_s
+            - wp_admin_user_s
+            - wp_admin_pass_s
+            - wp_second_user_pass_s
+        volumes:
+            - wp_files:/var/www/html
+        depends_on:
+            - mariadb
+        networks:
+            - inception
+        restart: always
+        expose:
+            - "8000"
+
+    mariadb:
+        build:
+            context: ./requirements/mariadb
+        container_name: mariadb
+        env_file: .env
+        secrets:
+            - db_root_pass_s
+            - db_user_s
+            - db_pass_s
+        volumes:
+            - db_data:/var/lib/mysql
+        networks:
+            - inception
+        restart: always
+        expose:
+            - "3306"
+
+volumes:
+    db_data:
+        driver_opts:
+            type: none
+            device: /home/chakim/data/db
+            o: bind
+    wp_files:
+        driver_opts:
+            type: none
+            device: /home/chakim/data/wp
+            o: bind
+
+networks:
+    inception:
+        driver: bridge
+
+secrets:
+    db_root_pass_s:
+        file: ../secrets/db_root_password.txt
+    db_user_s:
+        file: ../secrets/credentials.txt
+    db_pass_s:
+        file: ../secrets/db_password.txt
+    wp_admin_user_s:
+        file: ../secrets/wp_admin_user.txt
+    wp_admin_pass_s:
+        file: ../secrets/wp_admin_pass.txt
+    wp_second_user_pass_s:
+        file: ../secrets/wp_second_user_pass.txt

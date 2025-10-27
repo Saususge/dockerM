@@ -2,8 +2,15 @@ COMPOSE = srcs/docker-compose.yml
 
 DC = docker compose -f $(COMPOSE)
 
-all:
-	$(DC) up --build -d
+LOGIN = chakim
+DATA_PATH = /home/$(LOGIN)/data
+
+all: init_host
+		$(DC) up --build -d
+
+init_host:
+	@mkdir -p $(DATA_PATH)/db
+	@mkdir -p $(DATA_PATH)/wp
 
 build:
 	$(DC) build
@@ -16,4 +23,4 @@ clean:
 
 re: clean all
 
-phony: all build down clean re
+.PHONY: all build down clean re init_host
