@@ -21,6 +21,9 @@ down:
 clean:
 	$(DC) down -v
 
+log:
+	$(DC) logs -f
+
 re: clean all
 
-.PHONY: all build down clean re init_host
+.PHONY: all build down clean re init_host log

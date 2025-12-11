@@ -13,4 +13,10 @@ GRANT ALL PRIVILEGES ON \`$MYSQL_DATABASE\`.* TO '$(cat $MYSQL_USER_FILE)'@'%';
 FLUSH PRIVILEGES;
 EOF
 fi
+
+if [ ! -d "/run/mysqld" ]; then
+    mkdir -p /run/mysqld
+    chown -R mysql:mysql /run/mysqld
+fi
+
 exec "$@"

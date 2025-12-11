@@ -22,6 +22,12 @@ services:
             context: ./requirements/wordpress
         container_name: wordpress
         env_file: .env
+        environment:
+            - MYSQL_USER_FILE=/run/secrets/db_user_s
+            - MYSQL_PASSWORD_FILE=/run/secrets/db_pass_s
+            - WP_ADMIN_USER_FILE=/run/secrets/wp_admin_user_s
+            - WP_ADMIN_PASS_FILE=/run/secrets/wp_admin_pass_s
+            - WP_SECOND_PASS_FILE=/run/secrets/wp_second_user_pass_s
         secrets:
             - db_user_s
             - db_pass_s
@@ -32,6 +38,7 @@ services:
             - wp_files:/var/www/html
         depends_on:
             - mariadb
+            - redis
         networks:
             - inception
         restart: always
@@ -43,6 +50,10 @@ services:
             context: ./requirements/mariadb
         container_name: mariadb
         env_file: .env
+        environment:
+            - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db_root_pass_s
+            - MYSQL_USER_FILE=/run/secrets/db_user_s
+            - MYSQL_PASSWORD_FILE=/run/secrets/db_pass_s
         secrets:
             - db_root_pass_s
             - db_user_s
@@ -54,18 +65,77 @@ services:
         restart: always
         expose:
             - "3306"
+        
+    redis:
+        build:
+            context: ./requirements/redis
+        container_name: redis
+        networks:
+            - inception
+        restart: always
+        expose:
+          - "6379"
+          
+    adminer:
+        build:
+            context: ./requirements/adminer
+        container_name: adminer
+        networks:
+            - inception
+        restart: always
+        expose:
+            - "8000"
+        
+    ftp:
+        build:
+            context: ./requirements/ftp
+        container_name: ftp
+        environment:
+            - FTP_USER=ftpuser
+            - FTP_PASS_FILE=/run/secrets/ftp_pass_s
+        secrets:
+            - ftp_pass_s
+        volumes:
+            - wp_files:/var/www/html
+        networks:
+            - inception
+        ports:
+            - "21:21"
+            - "21100-21110:21100-21110"
+        restart: always
+        depends_on:
+            - wordpress
+    blog:
+        build:
+            context: ./requirements/blog
+        container_name: blog
+        networks:
+            - inception
+        restart: always
+        expose:
+            - "80"
+            
+    monitoring:
+        build:
+            context: ./requirements/monitoring
+        container_name: monitoring
+        networks:
+            - inception
+        restart: always
+        expose:
+            - "61208"
 
 volumes:
     db_data:
         driver_opts:
             type: none
             device: /home/chakim/data/db
-            o: bind
+            o: bind,z
     wp_files:
         driver_opts:
             type: none
             device: /home/chakim/data/wp
-            o: bind
+            o: bind,z
 
 networks:
     inception:
@@ -84,3 +154,5 @@ secrets:
         file: ../secrets/wp_admin_pass.txt
     wp_second_user_pass_s:
         file: ../secrets/wp_second_user_pass.txt
+    ftp_pass_s:
+        file: ../secrets/ftp_pass.txt
